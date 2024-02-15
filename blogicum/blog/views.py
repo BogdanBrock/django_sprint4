@@ -85,8 +85,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        print(form)
-        print(form.instance)
         return super().form_valid(form)
 
     def get_success_url(self):
