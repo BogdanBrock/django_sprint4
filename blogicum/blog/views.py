@@ -8,11 +8,11 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
-    ListView, CreateView, UpdateView, DetailView, DeleteView
+    CreateView, DeleteView, DetailView, ListView, UpdateView
 )
 
-from .forms import PostForm, CommentForm, UserEditForm
-from .models import Post, Category, Comment
+from .forms import CommentForm, PostForm, UserEditForm
+from .models import Category, Comment, Post
 
 
 User = get_user_model()
@@ -44,8 +44,22 @@ class DispatchMixin:
     def dispatch(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.author != self.request.user:
-            return redirect('blog:index')
+            return redirect('blog:post_id', post_id=self.kwargs['post_id'])
         return super().dispatch(request, *args, **kwargs)
+
+
+class ProfileGetSuccessUrlMixin:
+    def get_success_url(self):
+        return reverse(
+            'blog:profile',
+            kwargs={'username': self.request.user.username}
+        )
+
+
+class PostIDGetSuccessUrlMixin:
+    def get_success_url(self):
+        instance = self.get_object()
+        return reverse('blog:post_id', kwargs={'post_id': instance.pk})
 
 
 class IndexListView(ListView):
@@ -84,7 +98,11 @@ class PostDetailView(DetailView):
         return context
 
 
-class PostCreateView(LoginRequiredMixin, CreateView):
+class PostCreateView(
+    LoginRequiredMixin,
+    ProfileGetSuccessUrlMixin,
+    CreateView
+):
     """Создание поста одного из пользователей"""
 
     model = Post
@@ -95,29 +113,19 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse(
-            'blog:profile',
-            kwargs={'username': self.request.user.username}
-        )
 
-
-class PostUpdateView(LoginRequiredMixin, UpdateView):
+class PostUpdateView(
+    LoginRequiredMixin,
+    DispatchMixin,
+    PostIDGetSuccessUrlMixin,
+    UpdateView
+):
     """Редактирование поста"""
 
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            return redirect('blog:post_id', post_id=self.kwargs['post_id'])
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_success_url(self):
-        return reverse('blog:post_id', kwargs={'post_id': self.object.pk})
 
 
 class PostDeleteView(LoginRequiredMixin, DispatchMixin, DeleteView):
@@ -166,7 +174,11 @@ class CategoryPostsListView(ListView):
         return context
 
 
-class CommentCreateView(LoginRequiredMixin, CreateView):
+class CommentCreateView(
+    LoginRequiredMixin,
+    PostIDGetSuccessUrlMixin,
+    CreateView
+):
     """Можно создать комментарий к посту"""
 
     model = Post
@@ -179,14 +191,13 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         form.instance.post = self.get_object()
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse(
-            'blog:post_id',
-            kwargs={'post_id': self.get_object().pk}
-        )
 
-
-class CommentUpdateView(LoginRequiredMixin, DispatchMixin, UpdateView):
+class CommentUpdateView(
+    LoginRequiredMixin,
+    DispatchMixin,
+    PostIDGetSuccessUrlMixin,
+    UpdateView
+):
     """Возможность редактирования комментария"""
 
     model = Comment
@@ -200,21 +211,18 @@ class CommentUpdateView(LoginRequiredMixin, DispatchMixin, UpdateView):
         context.update({'comment': comment})
         return context
 
-    def get_success_url(self):
-        instance = self.get_object()
-        return reverse('blog:post_id', kwargs={'post_id': instance.pk})
 
-
-class CommentDeleteView(LoginRequiredMixin, DispatchMixin, DeleteView):
+class CommentDeleteView(
+    LoginRequiredMixin,
+    DispatchMixin,
+    PostIDGetSuccessUrlMixin,
+    DeleteView
+):
     """Возможность удалить комментарий"""
 
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-
-    def get_success_url(self):
-        instance = self.get_object()
-        return reverse('blog:post_id', kwargs={'post_id': instance.pk})
 
 
 class ProfileListView(ListView):
@@ -240,7 +248,11 @@ class ProfileListView(ListView):
         return context
 
 
-class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+class ProfileUpdateView(
+    LoginRequiredMixin,
+    ProfileGetSuccessUrlMixin,
+    UpdateView
+):
     """Редактирование профиля"""
 
     form_class = UserEditForm
@@ -248,6 +260,3 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_object(self, queryset=None):
         return self.request.user
-
-    def get_success_url(self):
-        return reverse('blog:profile', kwargs={'username': self.request.user})
