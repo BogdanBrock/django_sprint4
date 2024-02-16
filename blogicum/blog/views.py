@@ -56,7 +56,7 @@ class ProfileGetSuccessUrlMixin:
         )
 
 
-class PostIDGetSuccessUrlMixin:
+class PostIdGetSuccessUrlMixin:
     def get_success_url(self):
         instance = self.get_object()
         return reverse('blog:post_id', kwargs={'post_id': instance.pk})
@@ -117,7 +117,7 @@ class PostCreateView(
 class PostUpdateView(
     LoginRequiredMixin,
     DispatchMixin,
-    PostIDGetSuccessUrlMixin,
+    PostIdGetSuccessUrlMixin,
     UpdateView
 ):
     """Редактирование поста"""
@@ -176,7 +176,7 @@ class CategoryPostsListView(ListView):
 
 class CommentCreateView(
     LoginRequiredMixin,
-    PostIDGetSuccessUrlMixin,
+    PostIdGetSuccessUrlMixin,
     CreateView
 ):
     """Можно создать комментарий к посту"""
@@ -195,7 +195,7 @@ class CommentCreateView(
 class CommentUpdateView(
     LoginRequiredMixin,
     DispatchMixin,
-    PostIDGetSuccessUrlMixin,
+    PostIdGetSuccessUrlMixin,
     UpdateView
 ):
     """Возможность редактирования комментария"""
@@ -215,7 +215,7 @@ class CommentUpdateView(
 class CommentDeleteView(
     LoginRequiredMixin,
     DispatchMixin,
-    PostIDGetSuccessUrlMixin,
+    PostIdGetSuccessUrlMixin,
     DeleteView
 ):
     """Возможность удалить комментарий"""
