@@ -40,6 +40,14 @@ def query_set(filter=None, annotate=None):
     return query_set
 
 
+class DispatchMixin:
+    def dispatch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.author != self.request.user:
+            return redirect('blog:index')
+        return super().dispatch(request, *args, **kwargs)
+
+
 class IndexListView(ListView):
     """Отображаем на главной странице список объектов из базы данных"""
 
@@ -112,19 +120,13 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         return reverse('blog:post_id', kwargs={'post_id': self.object.pk})
 
 
-class PostDeleteView(LoginRequiredMixin, DeleteView):
+class PostDeleteView(LoginRequiredMixin, DispatchMixin, DeleteView):
     """Удаление поста"""
 
     model = Post
     template_name = 'blog/create.html'
     pk_url_kwarg = 'post_id'
     success_url = reverse_lazy('blog:index')
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            return redirect('blog:index')
-        return super().dispatch(request, *args, **kwargs)
 
 
 class CategoryPostsListView(ListView):
@@ -184,7 +186,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-class CommentUpdateView(LoginRequiredMixin, UpdateView):
+class CommentUpdateView(LoginRequiredMixin, DispatchMixin, UpdateView):
     """Возможность редактирования комментария"""
 
     model = Comment
@@ -198,35 +200,17 @@ class CommentUpdateView(LoginRequiredMixin, UpdateView):
         context.update({'comment': comment})
         return context
 
-    def dispatch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            return redirect(reverse(
-                'blog:post_id', kwargs={'post_id': instance.pk}
-            ))
-        else:
-            return super().dispatch(request, *args, **kwargs)
-
     def get_success_url(self):
         instance = self.get_object()
         return reverse('blog:post_id', kwargs={'post_id': instance.pk})
 
 
-class CommentDeleteView(LoginRequiredMixin, DeleteView):
+class CommentDeleteView(LoginRequiredMixin, DispatchMixin, DeleteView):
     """Возможность удалить комментарий"""
 
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-
-    def delete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.author != self.request.user:
-            return redirect(reverse(
-                'blog:post_id', kwargs={'post_id': instance.pk}
-            ))
-        else:
-            return super(). delete(request, *args, **kwargs)
 
     def get_success_url(self):
         instance = self.get_object()
@@ -240,18 +224,14 @@ class ProfileListView(ListView):
     paginate_by = SELECT_LIMIT
 
     def get_object(self, queryset=None):
-        profile = get_object_or_404(User, username=self.kwargs['username'])
-        return profile
+        return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self):
         profile = self.get_object()
-        if profile.username == self.request.user.username:
-            post = query_set(annotate=True).filter(author=profile)
-        else:
-            post = query_set(filter=True, annotate=True).filter(
-                author=profile,
-            )
-        return post
+        return query_set(
+            filter=self.request.user != profile,
+            annotate=True
+        ).filter(author=profile)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
