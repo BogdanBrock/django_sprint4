@@ -2,7 +2,7 @@
 [![Python](https://img.shields.io/badge/-Python-464646?style=flat&logo=Python&logoColor=56C0C0&color=008080)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/-Django-464646?style=flat&logo=Django&logoColor=56C0C0&color=008080)](https://www.djangoproject.com/)
 
-## Описание проекта Django_sprint4
+## Описание проекта
 Данный проект представляет из себя соц. сеть, где люди могут выкладывать свои посты, а так же комментировать посты друг друга
 
 ## Инструкция как развернуть проект:
