@@ -32,7 +32,7 @@ python manage.py runserver
 python manage.py loaddata db.json
 ```
 
--Вводим в браузер локальную ссылку проекта
+- Вводим в браузер локальную ссылку проекта
 ```bash
 http://127.0.0.1:8000/
 ```
